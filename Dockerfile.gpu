@@ -1,0 +1,11 @@
+# Image cho worker chạy model thật trên GPU
+FROM pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime
+WORKDIR /srv
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+# TODO: thêm phụ thuộc của model, ví dụ: diffusers transformers accelerate ...
+# COPY requirements-gpu.txt . && RUN pip install --no-cache-dir -r requirements-gpu.txt
+COPY app app
+COPY worker worker
+CMD ["python", "-m", "worker.vton_worker"]

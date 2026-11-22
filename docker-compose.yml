@@ -1,0 +1,33 @@
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+  api:
+    build: .
+    ports: ["8000:8000"]
+    environment: &env
+      REDIS_URL: redis://redis:6379/0
+      STORAGE_DIR: /data
+      DATA_TTL_HOURS: ${DATA_TTL_HOURS:-6}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
+      VTON_MODEL: ${VTON_MODEL:-mock}
+      SHOPEE_AFFILIATE_APP_ID: ${SHOPEE_AFFILIATE_APP_ID:-}
+      SHOPEE_AFFILIATE_SECRET: ${SHOPEE_AFFILIATE_SECRET:-}
+    volumes: [storage:/data]
+    depends_on: [redis]
+
+  worker:
+    build: .
+    # Model thật: đổi sang `dockerfile: Dockerfile.gpu` và bật khối deploy bên dưới
+    command: ["python", "-m", "worker.vton_worker"]
+    environment: *env
+    volumes: [storage:/data]
+    depends_on: [redis]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+
+volumes:
+  storage:
