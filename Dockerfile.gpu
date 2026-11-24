@@ -2,10 +2,23 @@
 FROM pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime
 WORKDIR /srv
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-# TODO: thêm phụ thuộc của model, ví dụ: diffusers transformers accelerate ...
-# COPY requirements-gpu.txt . && RUN pip install --no-cache-dir -r requirements-gpu.txt
+
+# detectron2 build từ nguồn nên cần trình biên dịch; opencv cần libgl/libglib.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential git libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt requirements-gpu.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -r requirements-gpu.txt
+
+# detectron2 KHÔNG có trên PyPI và KHÔNG nằm trong requirements.txt của Space CatVTON, nhưng
+# `model/DensePose/__init__.py` của họ import thẳng `detectron2.config` và `detectron2.engine`.
+# Thiếu nó thì AutoMasker không dựng được mask, tức không chạy được trên ảnh người dùng thô.
+# Ghim commit: detectron2 không phát hành theo phiên bản, `main` đổi bất cứ lúc nào.
+ARG DETECTRON2_REV=v0.6
+RUN pip install --no-cache-dir --no-build-isolation \
+        "git+https://github.com/facebookresearch/detectron2.git@${DETECTRON2_REV}"
+
 COPY app app
 COPY worker worker
 CMD ["python", "-m", "worker.vton_worker"]

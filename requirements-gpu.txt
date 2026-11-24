@@ -1,0 +1,22 @@
+# Phụ thuộc của CatVTON, lấy từ requirements.txt của HF Space zhengchong/CatVTON.
+# torch/torchvision đã có sẵn trong image pytorch/* nên không liệt kê lại ở đây.
+accelerate
+diffusers
+transformers
+huggingface_hub
+peft
+numpy<2
+opencv-python-headless
+scipy
+scikit-image
+matplotlib
+PyYAML
+tqdm
+sentencepiece
+protobuf
+# Phụ thuộc của detectron2 / densepose
+fvcore
+cloudpickle
+omegaconf
+pycocotools
+av

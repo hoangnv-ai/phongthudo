@@ -59,6 +59,30 @@ TikTok hiện chỉ tách `product_id`, người dùng tự tải ảnh lên (ch
 2. Đăng ký trong `worker/models/__init__.py`, đặt `VTON_MODEL=<tên>`.
 3. Build worker bằng `Dockerfile.gpu`, bật khối `deploy` GPU trong `docker-compose.yml`.
 
+### CatVTON
+
+`worker/models/catvton.py` đã nối sẵn. Ba điều cần biết trước khi chạy:
+
+* **Repo GitHub của CatVTON đã 404.** Mã nguồn lấy từ HF Space `zhengchong/CatVTON` qua
+  `snapshot_download(repo_type="space")`, **ghim revision** (`CATVTON_SPACE_REV`). Đừng đổi sang
+  `main`: Space sửa được bất cứ lúc nào, và một baseline tự đổi giữa hai lần chạy không còn là
+  baseline.
+* **Cần detectron2.** `AutoMasker` của họ import `detectron2.config` / `detectron2.engine`.
+  detectron2 không có trên PyPI và không nằm trong requirements của Space, nên `Dockerfile.gpu`
+  build nó từ nguồn (ghim `v0.6`). Không có nó thì không dựng được mask từ ảnh người dùng.
+* **Cần GPU CUDA.** Không có thì `load()` dừng ngay với thông điệp chỉ rõ cách sửa, thay vì chạy
+  được một nửa rồi hỏng giữa job.
+
+```bash
+# docker-compose.yml, service worker:
+#   build: { context: ., dockerfile: Dockerfile.gpu }
+#   và bỏ comment khối deploy GPU
+VTON_MODEL=catvton docker compose up --build
+```
+
+Biến môi trường: `CATVTON_STEPS` (mặc định 30; 50 là thiết lập của paper, đẹp hơn và chậm hơn),
+`CATVTON_GUIDANCE` (2.5), `CATVTON_SEED` (42), `CATVTON_SPACE_REV`, `CATVTON_WEIGHTS_REPO`.
+
 Mỗi tiến trình worker giữ 1 model / 1 GPU. Muốn tăng tải: chạy thêm worker, chúng tự chia job qua Redis.
 
 ## Bảo mật & quyền riêng tư
